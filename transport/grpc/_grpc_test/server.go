@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	oldcontext "golang.org/x/net/context"
-
 	"github.com/go-kit/kit/endpoint"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 	"github.com/go-kit/kit/transport/grpc/_grpc_test/pb"
@@ -33,10 +31,12 @@ func makeTestEndpoint(svc Service) endpoint.Endpoint {
 }
 
 type serverBinding struct {
+	pb.UnimplementedTestServer
+
 	test grpctransport.Handler
 }
 
-func (b *serverBinding) Test(ctx oldcontext.Context, req *pb.TestRequest) (*pb.TestResponse, error) {
+func (b *serverBinding) Test(ctx context.Context, req *pb.TestRequest) (*pb.TestResponse, error) {
 	_, response, err := b.test.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, err

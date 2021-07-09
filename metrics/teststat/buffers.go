@@ -23,10 +23,10 @@ func SumLines(w io.WriterTo, regex string) func() float64 {
 // LastLine expects a regex whose first capture group can be parsed as a
 // float64. It will dump the WriterTo and parse each line, expecting to find a
 // match. It returns the final captured float.
-func LastLine(w io.WriterTo, regex string) func() float64 {
-	return func() float64 {
+func LastLine(w io.WriterTo, regex string) func() []float64 {
+	return func() []float64 {
 		_, final := stats(w, regex, nil)
-		return final
+		return []float64{final}
 	}
 }
 
@@ -47,7 +47,6 @@ func stats(w io.WriterTo, regex string, h *generic.Histogram) (sum, final float6
 	re := regexp.MustCompile(regex)
 	buf := &bytes.Buffer{}
 	w.WriteTo(buf)
-	//fmt.Fprintf(os.Stderr, "%s\n", buf.String())
 	s := bufio.NewScanner(buf)
 	for s.Scan() {
 		match := re.FindStringSubmatch(s.Text())

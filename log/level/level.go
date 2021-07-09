@@ -172,11 +172,11 @@ func WarnValue() Value { return warnValue }
 // InfoValue returns the unique value added to log events by Info.
 func InfoValue() Value { return infoValue }
 
-// DebugValue returns the unique value added to log events by Warn.
+// DebugValue returns the unique value added to log events by Debug.
 func DebugValue() Value { return debugValue }
 
 var (
-	// key is of type interfae{} so that it allocates once during package
+	// key is of type interface{} so that it allocates once during package
 	// initialization and avoids allocating every time the value is added to a
 	// []interface{} later.
 	key interface{} = "level"

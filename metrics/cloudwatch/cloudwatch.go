@@ -1,8 +1,10 @@
 package cloudwatch
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -14,11 +16,11 @@ import (
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"github.com/go-kit/kit/metrics/internal/lv"
-	"strconv"
 )
 
 const (
 	maxConcurrentRequests = 20
+	maxValuesInABatch     = 150
 )
 
 type Percentiles []struct {
@@ -136,13 +138,18 @@ func (cw *CloudWatch) NewHistogram(name string) metrics.Histogram {
 }
 
 // WriteLoop is a helper method that invokes Send every time the passed
-// channel fires. This method blocks until the channel is closed, so clients
+// channel fires. This method blocks until ctx is canceled, so clients
 // probably want to run it in its own goroutine. For typical usage, create a
 // time.Ticker and pass its C channel to this method.
-func (cw *CloudWatch) WriteLoop(c <-chan time.Time) {
-	for range c {
-		if err := cw.Send(); err != nil {
-			cw.logger.Log("during", "Send", "err", err)
+func (cw *CloudWatch) WriteLoop(ctx context.Context, c <-chan time.Time) {
+	for {
+		select {
+		case <-c:
+			if err := cw.Send(); err != nil {
+				cw.logger.Log("during", "Send", "err", err)
+			}
+		case <-ctx.Done():
+			return
 		}
 	}
 }
@@ -168,13 +175,32 @@ func (cw *CloudWatch) Send() error {
 	})
 
 	cw.gauges.Reset().Walk(func(name string, lvs lv.LabelValues, values []float64) bool {
-		value := last(values)
-		datums = append(datums, &cloudwatch.MetricDatum{
+		if len(values) == 0 {
+			return true
+		}
+
+		datum := &cloudwatch.MetricDatum{
 			MetricName: aws.String(name),
 			Dimensions: makeDimensions(lvs...),
-			Value:      aws.Float64(value),
 			Timestamp:  aws.Time(now),
-		})
+		}
+
+		// CloudWatch Put Metrics API (https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html)
+		// expects batch of unique values including the array of corresponding counts
+		valuesCounter := make(map[float64]int)
+		for _, v := range values {
+			valuesCounter[v]++
+		}
+
+		for value, count := range valuesCounter {
+			if len(datum.Values) == maxValuesInABatch {
+				break
+			}
+			datum.Values = append(datum.Values, aws.Float64(value))
+			datum.Counts = append(datum.Counts, aws.Float64(float64(count)))
+		}
+
+		datums = append(datums, datum)
 		return true
 	})
 
@@ -229,7 +255,7 @@ func (cw *CloudWatch) Send() error {
 	}
 	var firstErr error
 	for i := 0; i < cap(errors); i++ {
-		if err := <-errors; err != nil && firstErr != nil {
+		if err := <-errors; err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}

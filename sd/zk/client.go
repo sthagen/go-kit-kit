@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/go-zookeeper/zk"
 
 	"github.com/go-kit/kit/log"
 )
@@ -237,6 +237,9 @@ func (c *client) Register(s *Service) error {
 	path := s.Path + s.Name
 	if err := c.CreateParentNodes(path); err != nil {
 		return err
+	}
+	if path[len(path)-1] != '/' {
+		path += "/"
 	}
 	node, err := c.CreateProtectedEphemeralSequential(path, s.Data, c.acl)
 	if err != nil {
