@@ -71,6 +71,7 @@ different starting assumptions.
 
 - [devimteam/microgen](https://github.com/devimteam/microgen)
 - [GrantZheng/kit](https://github.com/GrantZheng/kit)
+- [chaseSpace/kit](https://github.com/chaseSpace/kit)
 - [kujtimiihoxha/kit](https://github.com/kujtimiihoxha/kit) (unmaintained)
 - [nytimes/marvin](https://github.com/nytimes/marvin)
 - [sagikazarmark/mga](https://github.com/sagikazarmark/mga)
@@ -116,7 +117,7 @@ Projects with a ★ have had particular influence on Go kit's design (or vice-ve
 - [Negroni](https://github.com/codegangsta/negroni)
 - [Goji](https://github.com/zenazn/goji)
 - [Martini](https://github.com/go-martini/martini)
-- [Beego](http://beego.me/)
+- [Beego](https://beego.vip/)
 - [Revel](https://revel.github.io/) (considered [harmful](https://github.com/go-kit/kit/issues/350))
 - [GoBuffalo](https://gobuffalo.io/)
 

@@ -65,12 +65,12 @@ func (s *Instancer) loop(lastIndex uint64) {
 		instances []string
 		err       error
 		d         time.Duration = 10 * time.Millisecond
+		index     uint64
 	)
 	for {
-		index := lastIndex
 		instances, index, err = s.getInstances(lastIndex, s.quitc)
 		switch {
-		case err == errStopped:
+		case errors.Is(err, errStopped):
 			return // stopped via quitc
 		case err != nil:
 			s.logger.Log("err", err)
@@ -82,11 +82,12 @@ func (s *Instancer) loop(lastIndex uint64) {
 			time.Sleep(d)
 			d = conn.Exponential(d)
 		case index < lastIndex:
-			s.logger.Log("err", "index is less than previous; reseting to default")
+			s.logger.Log("err", "index is less than previous; resetting to default")
 			lastIndex = defaultIndex
 			time.Sleep(d)
 			d = conn.Exponential(d)
 		default:
+			lastIndex = index
 			s.cache.Update(sd.Event{Instances: instances})
 			d = 10 * time.Millisecond
 		}
